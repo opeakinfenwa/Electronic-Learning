@@ -1,3 +1,5 @@
+![MIT License](https://img.shields.io/badge/license-MIT-green)
+
 ## Modular Electronic Learning System
 
 This project is a modular, scalable, and extensible backend system built for managing an electronic learning platform. It is implemented using **full Express.js**, **Prisma ORM**, and **PostgreSQL**, with enhanced support for migrations and seeders using handcrafted runners to enable both forward and rollback capabilities.
@@ -172,6 +174,10 @@ npm run db:seed
 * Swagger or Redoc API docs
 * Add Redis for caching
 * Enhanced Google OAuth flow with consent screen
+
+## Acknowledgements
+
+Built to demonstrate deep understanding of modular backend architecture using Express, advanced ORM usage with Prisma, and complex relational database modeling. Showcases mastery in implementing secure authentication flows, structured migration and seeding systems, and role-based user-course relationships in a scalable PostgreSQL environment.
 
 ## License
 
