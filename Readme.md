@@ -1,0 +1,178 @@
+## Modular Electronic Learning System
+
+This project is a modular, scalable, and extensible backend system built for managing an electronic learning platform. It is implemented using **full Express.js**, **Prisma ORM**, and **PostgreSQL**, with enhanced support for migrations and seeders using handcrafted runners to enable both forward and rollback capabilities.
+
+## Architecture Overview
+
+The system is composed of decoupled modules reflecting domain-driven design principles:
+
+* **User Module** – Manages user accounts, roles, and profiles.
+* **Auth Module** – Provides both local and Google OAuth-based authentication.
+* **Course Module** – Handles course creation, updates, and publishing.
+* **Enrollment Module** – Manages course enrollment logic with user-course relationships.
+* **Lesson Module** – Handles the management and retrieval of course lessons.
+
+## Database Strategy with Prisma (PostgreSQL)
+
+#### Prisma + Raw SQL for Precision
+
+While Prisma is used for modeling and database client access, the project enhances its capabilities with custom SQL-based migration and seeder logic:
+
+* Prisma schema used for model definitions and generating the client
+* Raw SQL for full control over data migrations and seed logic
+
+#### Custom Migration System
+
+The project includes a handcrafted migration system that:
+
+* Stores `up/` and `down/` SQL files under `prisma/migrations/`
+* Logs history to `migration-history.json`
+* Ensures atomic rollback on failure
+
+```bash
+npm run db:migrate     # Applies all new migrations
+npm run db:rollback    # Rolls back the latest migration
+```
+
+### Seed System
+
+A structured seeder system includes:
+
+* `sql/` and `undo/` folders for seeding and undoing test/dev data
+* Seeder log tracking via `seeder-history.json`
+
+```bash
+npm run db:seed        # Runs all seed scripts
+npm run db:seed:undo   # Reverts the most recent seed
+```
+
+## Features by Module
+
+#### User Module
+
+* Manages users and their roles (e.g., student, instructor, admin)
+* User profile details like bio, title, and timestamps
+* Linked to courses and enrollments
+
+#### Auth Module
+
+* Supports both local (email/password) and Google OAuth authentication
+* Secure session/token management via JWT
+* Password reset and update flows
+
+#### Course Module
+
+* Instructors can create and manage courses
+* Each course can have multiple lessons and enrollments
+* Relationships:
+
+  * Course `belongsTo` User (Instructor)
+  * Course `hasMany` Lessons
+
+#### Enrollment Module
+
+* Users can enroll in available courses
+* Prevents duplicate enrollments
+* Tracks course progress (optional future enhancement)
+
+#### Lesson Module
+
+* Lessons are tied to a course
+* Tracks content, order, and timestamps
+* Optional: multimedia or assessment support
+
+## Prisma Schema Relationships
+
+* **User** ←→ **Course** (1\:N)
+* **User** ←→ **Enrollment** (1\:N)
+* **Course** ←→ **Lesson** (1\:N)
+* **Course** ←→ **Enrollment** (1\:N)
+
+## Engineering Principles & Efficiencies
+
+* **Modular Domain Structure**
+* **Prisma for ORM access**, refined with raw SQL migration/seed scripts
+* **Custom Migration/Seed Runners** with rollback and version tracking
+* **Authentication Flexibility** via local + Google OAuth
+* **Strict File Structure** for migrations, seeders, and logs
+
+## Getting Started
+
+#### Requirements
+
+* Node.js (v18+ recommended)
+* PostgreSQL (v14+)
+
+#### Environment Variables
+
+```env
+DATABASE_URL=postgres://user:pass@localhost:5432/learning_db
+JWT_SECRET=your_jwt_secret
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+```
+
+#### Install & Run
+
+```bash
+npm install
+
+# Generate Prisma Client
+npx prisma generate
+
+# Apply schema migrations
+npm run db:migrate
+
+# Seed initial data
+npm run db:seed
+
+# Start the server
+npm run start:dev
+```
+
+## Project Structure
+
+```plaintext
+src/
+├── modules/
+│   ├── auth/
+│   ├── users/
+│   ├── courses/
+│   ├── enrollments/
+│   └── lessons/
+prisma/
+├── migrations/
+│   ├── up/
+│   ├── down/
+│   ├── migration-runner.ts
+│   └── migration-history.json
+├── seeders/
+│   ├── sql/
+│   ├── undo/
+│   ├── seed-runner.ts
+│   └── seeder-history.json
+```
+
+## Sample Flow
+
+```bash
+# Migrate
+npm run db:migrate
+# Output:  Applied create-courses-table.sql
+
+# Seed
+npm run db:seed
+# Output: Seeded initial user and course data
+```
+
+## Future Improvements
+
+* Add media uploads to lesson content
+* User course progress tracking
+* Swagger or Redoc API docs
+* Add Redis for caching
+* Enhanced Google OAuth flow with consent screen
+
+## License
+
+This project is licensed under the MIT License

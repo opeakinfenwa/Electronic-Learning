@@ -1,0 +1,4 @@
+2025-05-29T09:05:16.903Z [INFO]: Server running on port 5001
+2025-05-29T09:05:17.603Z [INFO]: Connected to the database
+2025-05-29T09:05:33.191Z [WARN]: Received SIGINT. Closing database connection...
+2025-05-29T09:05:33.538Z [INFO]: Database disconnected
