@@ -1,72 +1,118 @@
-import fs from "fs";
-import path from "path";
+import "dotenv/config";
 import { Client } from "pg";
-import dotenv from "dotenv";
+import { readFileSync, readdirSync, existsSync, writeFileSync } from "fs";
+import { join } from "path";
 
-dotenv.config();
+const env = process.env.NODE_ENV || "development";
+console.log(`Running migration in ${env} environment...`);
 
-const DB_URL = process.env.DATABASE_URL!;
-const MIGRATIONS_DIR = __dirname;
-const UP_DIR = path.join(MIGRATIONS_DIR, "up");
-const DOWN_DIR = path.join(MIGRATIONS_DIR, "down");
-const HISTORY_FILE = path.join(MIGRATIONS_DIR, "migration-history.json");
-const loadHistory = (): string[] => {
-  if (!fs.existsSync(HISTORY_FILE)) return [];
-  return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf-8"));
-};
+let connectionString = process.env.DATABASE_URL;
+if (env === "production") connectionString = process.env.DATABASE_URL_PROD;
+else if (env === "test") connectionString = process.env.DATABASE_URL_TEST;
 
-const saveHistory = (history: string[]) => {
-  fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
-};
+const client = new Client({ connectionString });
+const historyFile = join(__dirname, "migration.history.json");
 
-const runSQL = async (filePath: string, client: Client) => {
-  const sql = fs.readFileSync(filePath, "utf-8");
-  await client.query(sql);
-};
+function getMigrationHistory(): string[] {
+  if (!existsSync(historyFile)) writeFileSync(historyFile, JSON.stringify([]));
+  return JSON.parse(readFileSync(historyFile, "utf8"));
+}
 
-const migrate = async (direction: "up" | "down") => {
-  const client = new Client({ connectionString: DB_URL });
+function saveMigrationHistory(history: string[]) {
+  writeFileSync(historyFile, JSON.stringify(history, null, 2));
+}
+
+async function runMigrations() {
   await client.connect();
 
-  try {
-    const applied = loadHistory();
-    const dir = direction === "up" ? UP_DIR : DOWN_DIR;
-    const files = fs.readdirSync(dir).sort();
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS migrations (
+      id SERIAL PRIMARY KEY,
+      filename TEXT NOT NULL,
+      run_on TIMESTAMP DEFAULT now()
+    );
+  `);
 
-    if (direction === "down") files.reverse();
+  const { rows } = await client.query("SELECT filename FROM migrations");
+  const dbApplied = new Set(rows.map((r) => r.filename));
+  const localApplied = getMigrationHistory();
 
-    for (const file of files) {
-      const id = file.split("_")[0];
-      const alreadyApplied = applied.includes(id);
+  const upDir = join(__dirname, "up");
+  const files = readdirSync(upDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
 
-      if (
-        (direction === "up" && alreadyApplied) ||
-        (direction === "down" && !alreadyApplied)
-      ) {
-        continue;
-      }
-
-      console.log(`Running ${direction} migration: ${file}`);
-      await runSQL(path.join(dir, file), client);
-
-      if (direction === "up") applied.push(id);
-      else applied.splice(applied.indexOf(id), 1);
-
-      saveHistory(applied);
+  for (const file of files) {
+    if (dbApplied.has(file) || localApplied.includes(file)) {
+      console.log(`Already applied: ${file}`);
+      continue;
     }
 
-    console.log(`Migration ${direction} complete.`);
-  } catch (error) {
-    console.error(`Migration ${direction} failed:`, error);
+    const sql = readFileSync(join(upDir, file), "utf8");
+    console.log(`Running migration: ${file}`);
+
+    try {
+      await client.query("BEGIN");
+      await client.query(sql);
+      await client.query(`INSERT INTO migrations (filename) VALUES ($1)`, [
+        file,
+      ]);
+      await client.query("COMMIT");
+      localApplied.push(file);
+      saveMigrationHistory(localApplied);
+      console.log(`Applied Migration: ${file}`);
+      console.log("All migrations completed.");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error(`Migration failed: ${file}`, err);
+      break;
+    }
+  }
+
+  await client.end();
+}
+
+async function rollbackLastMigration() {
+  await client.connect();
+
+  const localHistory = getMigrationHistory();
+  const lastMigration = localHistory[localHistory.length - 1];
+
+  if (!lastMigration) {
+    console.log("No migration to rollback.");
+    return await client.end();
+  }
+
+  const downDir = join(__dirname, "down");
+  const rollbackFile = join(downDir, lastMigration);
+
+  if (!existsSync(rollbackFile)) {
+    console.error(`No rollback SQL file found for: ${lastMigration}`);
+    return await client.end();
+  }
+
+  const sql = readFileSync(rollbackFile, "utf8");
+
+  try {
+    console.log(`Rolling back: ${lastMigration}`);
+    await client.query("BEGIN");
+    await client.query(sql);
+    await client.query(`DELETE FROM migrations WHERE filename = $1`, [
+      lastMigration,
+    ]);
+    await client.query("COMMIT");
+    localHistory.pop();
+    saveMigrationHistory(localHistory);
+    console.log(`Rolled back: ${lastMigration}`);
+    console.log("Rollback completed.");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(`Rollback failed for: ${lastMigration}`, err);
   } finally {
     await client.end();
   }
-};
-
-const direction = process.argv[2] as "up" | "down";
-if (!["up", "down"].includes(direction)) {
-  console.error("Usage: ts-node migration-runner.ts <up|down>");
-  process.exit(1);
 }
 
-migrate(direction);
+const action = process.argv[2];
+if (action === "rollback") rollbackLastMigration();
+else runMigrations();

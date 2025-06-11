@@ -8,10 +8,10 @@
     "start": "node ./dist/server.js",
     "dev": "npx prisma generate && nodemon ./src/server.ts",
     "prisma:studio": "prisma studio",
-    "db:migrate": "ts-node prisma/migrations/migration-runner.ts up",
-    "db:rollback": "ts-node prisma/migrations/migration-runner.ts down",
-    "db:seed": "ts-node prisma/seeders/seeder-runner.ts up",
-    "db:seed:undo": "ts-node prisma/seeders/seeder-runner.ts down"
+    "migrate": "ts-node prisma/migrations/migration-runner.ts",
+    "rollback": "ts-node prisma/migrations/migration-runner.ts rollback",
+    "seed": "ts-node prisma/seeders/seeder-runner.ts",
+    "seed:undo": "ts-node prisma/seeders/seeder-runner.ts undo"
   },
   "keywords": [],
   "author": "Bami Akinfenwa",

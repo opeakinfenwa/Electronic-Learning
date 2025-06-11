@@ -1,68 +1,101 @@
-import fs from "fs";
-import path from "path";
+import "dotenv/config";
 import { Client } from "pg";
-import dotenv from "dotenv";
+import { readFileSync, readdirSync, writeFileSync, existsSync } from "fs";
+import { join } from "path";
 
-dotenv.config();
+const env = process.env.NODE_ENV || "development";
+console.log(`Running seeds in ${env} environment...`);
 
-const SEEDERS_DIR = path.join(__dirname);
-const SQL_DIR = path.join(SEEDERS_DIR, "sql");
-const UNDO_DIR = path.join(SEEDERS_DIR, "undo");
-const HISTORY_FILE = path.join(SEEDERS_DIR, "seeder-history.json");
+let connectionString = process.env.DATABASE_URL;
+if (env === "production") connectionString = process.env.DATABASE_URL_PROD;
+else if (env === "test") connectionString = process.env.DATABASE_URL_TEST;
 
-const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-});
+const client = new Client({ connectionString });
 
-const readHistory = (): string[] => {
-  if (!fs.existsSync(HISTORY_FILE)) return [];
-  return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf-8"));
-};
+const seedDir = join(__dirname);
+const sqlDir = join(seedDir, "sql");
+const undoDir = join(seedDir, "undo");
+const historyFile = join(seedDir, "seeder.history.json");
 
-const writeHistory = (history: string[]) => {
-  fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
-};
+function getSeedHistory(): string[] {
+  if (!existsSync(historyFile)) return [];
+  const content = readFileSync(historyFile, "utf8");
+  return content.trim() ? JSON.parse(content) : [];
+}
 
-const applySeeders = async () => {
-  const applied = readHistory();
-  const seedFiles = fs.readdirSync(SQL_DIR).sort();
+function saveSeedHistory(history: string[]) {
+  writeFileSync(historyFile, JSON.stringify(history, null, 2));
+}
 
-  for (const file of seedFiles) {
-    if (applied.includes(file)) continue;
+async function runSeeds() {
+  try {
+    await client.connect();
+    const appliedSeeds = getSeedHistory();
+    const files = readdirSync(sqlDir).filter((f) => f.endsWith(".sql"));
 
-    const sql = fs.readFileSync(path.join(SQL_DIR, file), "utf-8");
-    console.log(`Applying ${file}`);
-    console.log(`Seeded database successfully`);
-    await client.query(sql);
-    applied.push(file);
-    writeHistory(applied);
+    for (const file of files) {
+      if (appliedSeeds.includes(file)) {
+        console.log(`Already seeded: ${file}`);
+        continue;
+      }
+
+      const sql = readFileSync(join(sqlDir, file), "utf8");
+      console.log(`Seeding: ${file}`);
+
+      await client.query("BEGIN");
+      await client.query(sql);
+      await client.query("COMMIT");
+
+      appliedSeeds.push(file);
+      saveSeedHistory(appliedSeeds);
+      console.log(`Seeded: ${file}`);
+    }
+
+    console.log("All seeders executed.");
+  } catch (err) {
+    console.error("Seeding failed:", err);
+    await client.query("ROLLBACK");
+  } finally {
+    await client.end();
   }
-};
+}
 
-const rollbackSeeders = async () => {
-  const applied = readHistory();
-  if (applied.length === 0) {
-    console.log("No seeders to rollback.");
-    return;
+async function rollbackSeeds() {
+  try {
+    await client.connect();
+    const history = getSeedHistory().reverse();
+
+    for (const file of history) {
+      const undoPath = join(undoDir, file);
+      if (!existsSync(undoPath)) {
+        console.warn(`No undo file found for: ${file}`);
+        continue;
+      }
+
+      const undoSql = readFileSync(undoPath, "utf8");
+      console.log(`Undoing seed: ${file}`);
+
+      await client.query("BEGIN");
+      await client.query(undoSql);
+      await client.query("COMMIT");
+
+      history.pop();
+      saveSeedHistory([...history].reverse());
+      console.log(`Seed Undone: ${file}`);
+    }
+
+    console.log("All seeders rolled back.");
+  } catch (err) {
+    console.error("Rollback failed:", err);
+    await client.query("ROLLBACK");
+  } finally {
+    await client.end();
   }
+}
 
-  const last = applied.pop()!;
-  const sql = fs.readFileSync(path.join(UNDO_DIR, last), "utf-8");
-  console.log(`Rolling back ${last}`);
-  console.log(` Undo seed succesfully `);
-  await client.query(sql);
-  writeHistory(applied);
-};
-
-(async () => {
-  await client.connect();
-
-  const action = process.argv[2];
-  if (action === "down") {
-    await rollbackSeeders();
-  } else {
-    await applySeeders();
-  }
-
-  await client.end();
-})();
+const command = process.argv[2];
+if (command === "undo") {
+  rollbackSeeds();
+} else {
+  runSeeds();
+}
