@@ -6,7 +6,7 @@ This project is a modular, scalable, and extensible backend system built for man
 
 ## Architecture Overview
 
-The system is composed of decoupled modules reflecting domain-driven design principles:
+The system is organized into clearly defined modules that ensure maintainability, scalability, and ease of development:
 
 * **User Module** – Manages user accounts, roles, and profiles.
 * **Auth Module** – Provides both local and Google OAuth-based authentication.
@@ -92,7 +92,6 @@ npm run db:seed:undo   # Reverts the most recent seed
 
 ## Engineering Principles & Efficiencies
 
-* **Modular Domain Structure**
 * **Prisma for ORM access**, refined with raw SQL migration/seed scripts
 * **Custom Migration/Seed Runners** with rollback and version tracking
 * **Authentication Flexibility** via local + Google OAuth
@@ -136,12 +135,12 @@ npm run start:dev
 
 ```plaintext
 src/
-├── modules/
-│   ├── auth/
-│   ├── users/
-│   ├── courses/
-│   ├── enrollments/
-│   └── lessons/
+├── config
+├── controller
+├── errors
+├── middlewares
+├── services
+└── routes
 prisma/
 ├── migrations/
 │   ├── up/
