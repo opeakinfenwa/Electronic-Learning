@@ -32,8 +32,8 @@ The project includes a handcrafted migration system that:
 * Ensures atomic rollback on failure
 
 ```bash
-npm run db:migrate     # Applies all new migrations
-npm run db:rollback    # Rolls back the latest migration
+npm run migrate     # Applies all new migrations
+npm run rollback    # Rolls back the latest migration
 ```
 
 ### Seed System
@@ -44,8 +44,8 @@ A structured seeder system includes:
 * Seeder log tracking via `seeder-history.json`
 
 ```bash
-npm run db:seed        # Runs all seed scripts
-npm run db:seed:undo   # Reverts the most recent seed
+npm run seed        # Runs all seed scripts
+npm run seed:undo   # Reverts the most recent seed
 ```
 
 ## Features by Module
@@ -118,17 +118,14 @@ GOOGLE_CLIENT_SECRET=...
 ```bash
 npm install
 
-# Generate Prisma Client
-npx prisma generate
+# Start the server in development & Generate prisma client
+npx run dev
 
 # Apply schema migrations
-npm run db:migrate
+npm run migrate
 
 # Seed initial data
-npm run db:seed
-
-# Start the server
-npm run start:dev
+npm run seed
 ```
 
 ## Project Structure
@@ -152,18 +149,6 @@ prisma/
 │   ├── undo/
 │   ├── seed-runner.ts
 │   └── seeder-history.json
-```
-
-## Sample Flow
-
-```bash
-# Migrate
-npm run db:migrate
-# Output:  Applied create-courses-table.sql
-
-# Seed
-npm run db:seed
-# Output: Seeded initial user and course data
 ```
 
 ## Future Improvements
