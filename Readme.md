@@ -18,7 +18,7 @@ The system is organized into clearly defined modules that ensure maintainability
 
 #### Prisma + Raw SQL for Precision
 
-While Prisma is used for modeling and database client access, the project enhances its capabilities with custom SQL-based migration and seeder logic:
+While Prisma is used for modeling and database client access, the project enhances its capabilities with custom SQL based migration and seeder logic:
 
 * Prisma schema used for model definitions and generating the client
 * Raw SQL for full control over data migrations and seed logic
