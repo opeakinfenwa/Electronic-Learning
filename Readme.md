@@ -104,10 +104,12 @@ npm run seed:undo   # Reverts the most recent seed
 * Node.js (v18+ recommended)
 * PostgreSQL (v14+)
 
-#### 
-DATABASE_URL=... <br>
-JWT_SECRET=... <br>
-GOOGLE_CLIENT_ID=... <br>
+#### Environment Variables 
+
+```env
+DATABASE_URL=... 
+JWT_SECRET=... 
+GOOGLE_CLIENT_ID=... 
 GOOGLE_CLIENT_SECRET=...
 ```
 
