@@ -9,9 +9,9 @@ This project is a modular, scalable, and extensible backend system built for man
 The system is organized into clearly defined modules that ensure maintainability, scalability, and ease of development:
 
 * **User Module** – Manages user accounts, roles, and profiles.
-* **Auth Module** – Provides both local and Google OAuth-based authentication.
+* **Auth Module** – Provides both local and Google OAuth based authentication.
 * **Course Module** – Handles course creation, updates, and publishing.
-* **Enrollment Module** – Manages course enrollment logic with user-course relationships.
+* **Enrollment Module** – Manages course enrollment logic with user course relationships.
 * **Lesson Module** – Handles the management and retrieval of course lessons.
 
 ## Database Strategy with Prisma (PostgreSQL)
@@ -104,11 +104,9 @@ npm run seed:undo   # Reverts the most recent seed
 * Node.js (v18+ recommended)
 * PostgreSQL (v14+)
 
-#### Environment Variables
-
-```env
-DATABASE_URL=postgres://user:pass@localhost:5432/learning_db
-JWT_SECRET=your_jwt_secret
+#### 
+DATABASE_URL=...
+JWT_SECRET=...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 ```
@@ -161,7 +159,7 @@ prisma/
 
 ## Acknowledgements
 
-Built to demonstrate deep understanding of modular backend architecture using Express, advanced ORM usage with Prisma, and complex relational database modeling. Showcases mastery in implementing secure authentication flows, structured migration and seeding systems, and role-based user-course relationships in a scalable PostgreSQL environment.
+Built to demonstrate deep understanding of modular backend architecture using Express, advanced ORM usage with Prisma, and complex relational database modeling. Showcases mastery in implementing secure authentication flows, structured migration and seeding systems, and role based user course relationships in a scalable PostgreSQL environment.
 
 ## License
 
