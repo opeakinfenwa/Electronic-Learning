@@ -6,7 +6,7 @@ This project is a modular, scalable, and extensible backend system built for man
 
 ## Architecture Overview
 
-The system is organized into clearly defined modules that ensure maintainability, scalability, and ease of development:
+The system is organised into clearly defined modules that ensure maintainability, scalability, and ease of development:
 
 * **User Module** – Manages user accounts, roles, and profiles.
 * **Auth Module** – Provides both local and Google OAuth based authentication.
